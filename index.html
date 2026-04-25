@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu Laundry DaNang</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f5f5f5;color:#333;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f5f5f5;}
+.login-box{background:#fff;border-radius:12px;padding:2rem;width:340px;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+.login-box h2{text-align:center;margin-bottom:1.5rem;font-size:20px;}
+.login-box input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;}
+.login-box button{width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;}
+.login-box button:hover{background:#1d4ed8;}
+.login-error{color:#dc2626;font-size:13px;margin-bottom:8px;text-align:center;}
+.app{display:none;}
+header{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:16px;font-weight:600;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.lang-btn{padding:4px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;}
+.lang-btn.active{background:#2563eb;color:#fff;border-color:#2563eb;}
+.logout-btn{padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;}
+.main{display:grid;grid-template-columns:1fr 340px;gap:12px;padding:12px;max-width:1200px;margin:0 auto;}
+@media(max-width:768px){.main{grid-template-columns:1fr;}}
+.panel{background:#fff;border-radius:10px;padding:16px;border:1px solid #e5e7eb;}
+.panel-title{font-size:14px;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f0f0f0;}
+.section-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 6px;}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.input-row input,.single-input{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;}
+.weight-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.weight-row input{width:90px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;}
+.weight-row label{font-size:13px;color:#555;}
+.svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.svc-btn{padding:10px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;cursor:pointer;text-align:left;transition:all 0.15s;}
+.svc-btn:hover{border-color:#2563eb;background:#eff6ff;}
+.svc-btn .sname{font-size:13px;font-weight:500;color:#333;}
+.svc-btn .sprice{font-size:11px;color:#888;margin-top:2px;}
+.note-input{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;resize:none;height:60px;margin-top:4px;}
+.tab-bar{display:flex;gap:4px;margin-bottom:12px;}
+.tab{padding:6px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;color:#666;}
+.tab.active{background:#f0f4ff;color:#2563eb;border-color:#bfdbfe;}
+.order-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5;}
+.oname{flex:1;font-size:13px;}
+.oname .odetail{font-size:11px;color:#aaa;}
+.oprice{font-size:13px;color:#555;min-width:90px;text-align:right;}
+.odel{padding:2px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#aaa;}
+.odel:hover{color:#dc2626;border-color:#dc2626;}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;margin-top:4px;}
+.total-label{font-size:14px;color:#555;}
+.total-amount{font-size:22px;font-weight:600;color:#2563eb;}
+.receipt-box{background:#f9fafb;border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:11px;color:#333;line-height:1.8;white-space:pre-wrap;margin:8px 0;max-height:300px;overflow-y:auto;}
+.btn-row{display:flex;gap:6px;margin-top:8px;}
+.btn{flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;}
+.btn-blue{background:#2563eb;color:#fff;}
+.btn-blue:hover{background:#1d4ed8;}
+.btn-green{background:#16a34a;color:#fff;}
+.btn-green:hover{background:#15803d;}
+.btn-red{background:#fff;color:#dc2626;border:1px solid #fca5a5;}
+.btn-red:hover{background:#fef2f2;}
+.empty{text-align:center;padding:2rem;color:#bbb;font-size:13px;}
+.history-item{padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px;}
+.hname{font-size:13px;font-weight:500;}
+.hinfo{font-size:12px;color:#888;margin-top:2px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;cursor:pointer;}
+.badge-pending{background:#fef3c7;color:#92400e;}
+.badge-ready{background:#d1fae5;color:#065f46;}
+.settings-input{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;margin-bottom:8px;}
+.price-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.price-row span{flex:1;font-size:13px;}
+.price-row input{width:110px;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;}
+.price-row .unit{font-size:11px;color:#aaa;width:30px;}
+.loading{text-align:center;padding:2rem;color:#888;}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <h2>Tu Laundry DaNang</h2>
+    <div class="login-error" id="login-error"></div>
+    <input type="email" id="login-email" placeholder="Email" value="bu0916@gmail.com"/>
+    <input type="password" id="login-pass" placeholder="Password"/>
+    <button onclick="doLogin()">登入 / Sign In</button>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <header>
+    <h1 id="hdr-title">Tu Laundry DaNang</h1>
+    <div class="header-right">
+      <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('vi')">VI</button>
+      <button class="logout-btn" onclick="doLogout()">登出</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div>
+      <div class="panel" style="margin-bottom:10px;">
+        <div class="panel-title" id="t-customer">客人資料</div>
+        <div class="input-row">
+          <input type="text" id="cname" placeholder="姓名 Name Tên"/>
+          <input type="text" id="cphone" placeholder="電話 Phone SĐT"/>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:13px;color:#555;white-space:nowrap;" id="t-pickup">取件日期</label>
+          <input type="date" id="cpickup" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;"/>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:10px;">
+        <div class="panel-title" id="t-services">服務項目</div>
+        <div class="section-label" id="t-bykg">按重量計費</div>
+        <div class="weight-row">
+          <label id="t-weight">重量 (kg)</label>
+          <input type="number" id="weight" min="0" step="0.1" value="0" oninput="renderServices()"/>
+        </div>
+        <div class="svc-grid" id="kg-svcs"></div>
+        <div class="section-label" id="t-fixed">固定價格 / Combo</div>
+        <div class="svc-grid" id="fixed-svcs"></div>
+        <div class="section-label" id="t-delivery">運費</div>
+        <div class="svc-grid" id="delivery-svcs"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" id="t-note">備註</div>
+        <textarea class="note-input" id="cnote" placeholder="特別要求..."></textarea>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="tab-bar">
+          <button class="tab active" onclick="switchTab('order')" id="tab-order">訂單</button>
+          <button class="tab" onclick="switchTab('history')" id="tab-history">記錄</button>
+          <button class="tab" onclick="switchTab('settings')" id="tab-settings">設定</button>
+        </div>
+
+        <div id="view-order">
+          <div id="order-items"><div class="empty" id="t-empty">尚未選擇服務</div></div>
+          <div class="total-row">
+            <span class="total-label" id="t-total">總計</span>
+            <span class="total-amount" id="total-display">0 VND</span>
+          </div>
+          <div class="panel-title" style="margin-top:12px;" id="t-receipt">收據預覽</div>
+          <div class="receipt-box" id="receipt-preview"></div>
+          <textarea class="note-input" id="receipt-note" placeholder="收據備註..."></textarea>
+          <div class="btn-row">
+            <button class="btn btn-blue" onclick="printReceipt()" id="t-print">列印</button>
+            <button class="btn btn-green" onclick="saveOrder()" id="t-save">儲存</button>
+            <button class="btn btn-red" onclick="clearOrder()" id="t-clear">清除</button>
+          </div>
+        </div>
+
+        <div id="view-history" style="display:none;">
+          <div id="history-list"><div class="empty">載入中...</div></div>
+        </div>
+
+        <div id="view-settings" style="display:none;">
+          <div class="panel-title">店家資料</div>
+          <input class="settings-input" id="s-name" placeholder="店名"/>
+          <input class="settings-input" id="s-addr" placeholder="地址"/>
+          <input class="settings-input" id="s-phone" placeholder="電話"/>
+          <input class="settings-input" id="s-thanks" placeholder="感謝語"/>
+          <div class="panel-title" style="margin-top:12px;">服務價格</div>
+          <div id="price-settings"></div>
+          <button class="btn btn-blue" style="width:100%;margin-top:10px;" onclick="saveSettings()">儲存設定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://yibchgwasifncomclksh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_DgnotKHhPlZMfuOXHXU8Rg_stySRiCl';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let lang = 'zh';
+let orderItems = [];
+let shopInfo = { name:'Tu Laundry DaNang', addr:'Da Nang, Vietnam', phone:'', thanks:'Thank you! Cảm ơn! 謝謝!' };
+let services = {
+  kg:[
+    {id:'wash', name:{zh:'洗衣',en:'Washing',vi:'Giặt'}, pricePerKg:20000},
+    {id:'dry', name:{zh:'烘乾',en:'Drying',vi:'Sấy'}, pricePerKg:15000},
+    {id:'washdry', name:{zh:'洗+烘',en:'Wash+Dry',vi:'Giặt+Sấy'}, pricePerKg:30000},
+    {id:'iron', name:{zh:'燙衣',en:'Ironing',vi:'Ủi'}, pricePerKg:10000},
+  ],
+  fixed:[
+    {id:'combo1', name:{zh:'Combo基本',en:'Basic Combo',vi:'Combo cơ bản'}, price:120000},
+    {id:'combo2', name:{zh:'Combo豪華',en:'Premium Combo',vi:'Combo cao cấp'}, price:200000},
+    {id:'shoes', name:{zh:'洗鞋(雙)',en:'Shoes(pair)',vi:'Giặt giày'}, price:80000},
+    {id:'bag', name:{zh:'洗包包',en:'Bag Wash',vi:'Giặt túi'}, price:100000},
+    {id:'blanket', name:{zh:'洗棉被',en:'Blanket',vi:'Chăn'}, price:150000},
+    {id:'express', name:{zh:'加急服務',en:'Express',vi:'Dịch vụ gấp'}, price:50000},
+  ],
+  delivery:[
+    {id:'pickup', name:{zh:'取件服務',en:'Pickup',vi:'Lấy đồ tận nơi'}, price:20000},
+    {id:'dropoff', name:{zh:'送件服務',en:'Delivery',vi:'Giao đồ tận nơi'}, price:20000},
+    {id:'both', name:{zh:'來回運費',en:'Round Trip',vi:'Đưa đón'}, price:35000},
+  ]
+};
+
+const T = {
+  zh:{customer:'客人資料',services:'服務項目',bykg:'按重量計費',fixed:'固定價格 / Combo',delivery:'運費',note:'備註',weight:'重量 (kg)',total:'總計',print:'列印',save:'儲存',clear:'清除',empty:'尚未選擇服務',pickup:'取件日期',receipt:'收據預覽',tabOrder:'訂單',tabHistory:'記錄',tabSettings:'設定'},
+  en:{customer:'Customer',services:'Services',bykg:'By Weight',fixed:'Fixed / Combo',delivery:'Delivery',note:'Note',weight:'Weight (kg)',total:'Total',print:'Print',save:'Save',clear:'Clear',empty:'No services selected',pickup:'Pickup Date',receipt:'Receipt Preview',tabOrder:'Order',tabHistory:'History',tabSettings:'Settings'},
+  vi:{customer:'Thông tin KH',services:'Dịch vụ',bykg:'Tính theo kg',fixed:'Giá cố định',delivery:'Phí giao',note:'Ghi chú',weight:'Trọng lượng (kg)',total:'Tổng cộng',print:'In',save:'Lưu',clear:'Xóa',empty:'Chưa chọn dịch vụ',pickup:'Ngày nhận',receipt:'Xem trước HĐ',tabOrder:'Đơn hàng',tabHistory:'Lịch sử',tabSettings:'Cài đặt'}
+};
+
+async function doLogin(){
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  const {error} = await sb.auth.signInWithPassword({email, password:pass});
+  if(error){ document.getElementById('login-error').textContent = '登入失敗：' + error.message; return; }
+  showApp();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-wrap').style.display = 'flex';
+}
+
+async function showApp(){
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  await loadSettings();
+  renderServices();
+  updateOrderDisplay();
+  updateLabels();
+}
+
+async function loadSettings(){
+  const {data} = await sb.from('settings').select('*').eq('id',1).single();
+  if(data){
+    shopInfo = {name:data.shop_name||shopInfo.name, addr:data.shop_addr||shopInfo.addr, phone:data.shop_phone||'', thanks:data.thank_msg||shopInfo.thanks};
+    if(data.services) services = data.services;
+  }
+  document.getElementById('s-name').value = shopInfo.name;
+  document.getElementById('s-addr').value = shopInfo.addr;
+  document.getElementById('s-phone').value = shopInfo.phone;
+  document.getElementById('s-thanks').value = shopInfo.thanks;
+}
+
+async function saveSettings(){
+  shopInfo.name = document.getElementById('s-name').value;
+  shopInfo.addr = document.getElementById('s-addr').value;
+  shopInfo.phone = document.getElementById('s-phone').value;
+  shopInfo.thanks = document.getElementById('s-thanks').value;
+  await sb.from('settings').upsert({id:1, shop_name:shopInfo.name, shop_addr:shopInfo.addr, shop_phone:shopInfo.phone, thank_msg:shopInfo.thanks, services});
+  renderServices();
+  alert('設定已儲存！');
+}
+
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach((b,i)=>b.classList.toggle('active',['zh','en','vi'][i]===l));
+  updateLabels();
+  renderServices();
+  updateOrderDisplay();
+}
+
+function updateLabels(){
+  const t=T[lang];
+  Object.keys(t).forEach(k=>{
+    const el=document.getElementById('t-'+k);
+    if(el) el.textContent=t[k];
+  });
+  document.getElementById('tab-order').textContent=t.tabOrder;
+  document.getElementById('tab-history').textContent=t.tabHistory;
+  document.getElementById('tab-settings').textContent=t.tabSettings;
+}
+
+function fmt(p){ return parseInt(p).toLocaleString()+' VND'; }
+
+function renderServices(){
+  const w = parseFloat(document.getElementById('weight').value)||0;
+  document.getElementById('kg-svcs').innerHTML = services.kg.map(s=>`
+    <button class="svc-btn" onclick="addKg('${s.id}')">
+      <div class="sname">${s.name[lang]}</div>
+      <div class="sprice">${fmt(s.pricePerKg)}/kg${w>0?' = '+fmt(Math.round(s.pricePerKg*w)):''}</div>
+    </button>`).join('');
+  document.getElementById('fixed-svcs').innerHTML = services.fixed.map(s=>`
+    <button class="svc-btn" onclick="addFixed('${s.id}','fixed')">
+      <div class="sname">${s.name[lang]}</div>
+      <div class="sprice">${fmt(s.price)}</div>
+    </button>`).join('');
+  document.getElementById('delivery-svcs').innerHTML = services.delivery.map(s=>`
+    <button class="svc-btn" onclick="addFixed('${s.id}','delivery')">
+      <div class="sname">${s.name[lang]}</div>
+      <div class="sprice">${fmt(s.price)}</div>
+    </button>`).join('');
+  renderPriceSettings();
+}
+
+function addKg(id){
+  const s=services.kg.find(x=>x.id===id);
+  const w=parseFloat(document.getElementById('weight').value)||0;
+  if(w<=0){alert('請先輸入重量');return;}
+  const price=Math.round(s.pricePerKg*w);
+  orderItems.push({id:Date.now(),name:s.name[lang],detail:w+'kg × '+fmt(s.pricePerKg),price});
+  updateOrderDisplay();
+}
+
+function addFixed(id,type){
+  const list=type==='fixed'?services.fixed:services.delivery;
+  const s=list.find(x=>x.id===id);
+  orderItems.push({id:Date.now(),name:s.name[lang],detail:'',price:s.price});
+  updateOrderDisplay();
+}
+
+function removeItem(id){
+  orderItems=orderItems.filter(i=>i.id!==id);
+  updateOrderDisplay();
+}
+
+function updateOrderDisplay(){
+  const c=document.getElementById('order-items');
+  if(orderItems.length===0){
+    c.innerHTML=`<div class="empty">${T[lang].empty}</div>`;
+  } else {
+    c.innerHTML=orderItems.map(i=>`
+      <div class="order-item">
+        <div class="oname"><div>${i.name}</div>${i.detail?'<div class="odetail">'+i.detail+'</div>':''}</div>
+        <div class="oprice">${fmt(i.price)}</div>
+        <button class="odel" onclick="removeItem(${i.id})">✕</button>
+      </div>`).join('');
+  }
+  const total=orderItems.reduce((s,i)=>s+i.price,0);
+  document.getElementById('total-display').textContent=fmt(total);
+  buildReceipt();
+}
+
+function buildReceipt(){
+  const name=document.getElementById('cname').value;
+  const phone=document.getElementById('cphone').value;
+  const pickup=document.getElementById('cpickup').value;
+  const note=document.getElementById('cnote').value;
+  const rNote=document.getElementById('receipt-note').value;
+  const total=orderItems.reduce((s,i)=>s+i.price,0);
+  const now=new Date();
+  const dateStr=now.toLocaleDateString()+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const orderNo='ORD-'+Date.now().toString().slice(-6);
+  let r='';
+  r+='================================\n';
+  r+=shopInfo.name+'\n';
+  if(shopInfo.addr) r+=shopInfo.addr+'\n';
+  if(shopInfo.phone) r+='Tel: '+shopInfo.phone+'\n';
+  r+='================================\n';
+  r+=orderNo+'  '+dateStr+'\n';
+  if(name) r+=(lang==='zh'?'姓名':lang==='vi'?'Khách':'Customer')+': '+name+'\n';
+  if(phone) r+=(lang==='zh'?'電話':lang==='vi'?'SĐT':'Phone')+': '+phone+'\n';
+  if(pickup) r+=(lang==='zh'?'取件日':lang==='vi'?'Ngày nhận':'Pickup')+': '+pickup+'\n';
+  r+='--------------------------------\n';
+  orderItems.forEach(i=>{
+    r+=i.name+'\n';
+    if(i.detail) r+='  '+i.detail+'\n';
+    r+='  '+fmt(i.price)+'\n';
+  });
+  r+='--------------------------------\n';
+  r+=(lang==='zh'?'總計':lang==='vi'?'Tổng':'Total')+': '+fmt(total)+'\n';
+  if(note) r+=(lang==='zh'?'備註':'Note')+': '+note+'\n';
+  if(rNote) r+=rNote+'\n';
+  r+='================================\n';
+  r+=shopInfo.thanks+'\n';
+  r+='================================\n';
+  document.getElementById('receipt-preview').textContent=r;
+  return r;
+}
+
+function printReceipt(){
+  const content=buildReceipt();
+  const w=window.open('','_blank','width=420,height=700');
+  w.document.write(`<html><head><title>Receipt</title><style>body{font-family:'Courier New',monospace;font-size:12px;margin:0;padding:8px;width:80mm;}@media print{@page{margin:0;size:80mm auto;}}</style></head><body><pre>${content}</pre><script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
+  w.document.close();
+}
+
+async function saveOrder(){
+  const name=document.getElementById('cname').value;
+  if(!name){alert('請輸入客人姓名');return;}
+  if(orderItems.length===0){alert('請選擇服務');return;}
+  const total=orderItems.reduce((s,i)=>s+i.price,0);
+  const orderNo='ORD-'+Date.now().toString().slice(-6);
+  const {error}=await sb.from('orders').insert({
+    order_no:orderNo,
+    customer_name:name,
+    customer_phone:document.getElementById('cphone').value,
+    pickup_date:document.getElementById('cpickup').value||null,
+    note:document.getElementById('cnote').value,
+    items:orderItems,
+    total,
+    status:'pending'
+  });
+  if(error){alert('儲存失敗：'+error.message);return;}
+  alert('訂單 '+orderNo+' 已儲存！');
+  clearOrder();
+}
+
+function clearOrder(){
+  orderItems=[];
+  document.getElementById('cname').value='';
+  document.getElementById('cphone').value='';
+  document.getElementById('cpickup').value='';
+  document.getElementById('cnote').value='';
+  document.getElementById('weight').value='0';
+  renderServices();
+  updateOrderDisplay();
+}
+
+async function loadHistory(){
+  document.getElementById('history-list').innerHTML='<div class="loading">載入中...</div>';
+  const {data,error}=await sb.from('orders').select('*').order('created_at',{ascending:false}).limit(50);
+  if(error||!data){document.getElementById('history-list').innerHTML='<div class="empty">載入失敗</div>';return;}
+  if(data.length===0){document.getElementById('history-list').innerHTML='<div class="empty">尚無訂單</div>';return;}
+  document.getElementById('history-list').innerHTML=data.map(o=>`
+    <div class="history-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="hname">${o.customer_name} <span style="font-size:11px;color:#aaa;">${o.order_no}</span></div>
+        <span class="badge ${o.status==='ready'?'badge-ready':'badge-pending'}" onclick="toggleStatus('${o.id}','${o.status}',this)">
+          ${o.status==='ready'?'✓ 取件':'待取件'}
+        </span>
+      </div>
+      <div class="hinfo">${new Date(o.created_at).toLocaleDateString()}${o.pickup_date?' · 取件:'+o.pickup_date:''} · ${fmt(o.total)}</div>
+      <div class="hinfo">${(o.items||[]).map(i=>i.name).join(', ')}</div>
+      ${o.customer_phone?'<div class="hinfo">Tel: '+o.customer_phone+'</div>':''}
+    </div>`).join('');
+}
+
+async function toggleStatus(id,current,el){
+  const newStatus=current==='pending'?'ready':'pending';
+  await sb.from('orders').update({status:newStatus}).eq('id',id);
+  el.className='badge '+(newStatus==='ready'?'badge-ready':'badge-pending');
+  el.textContent=newStatus==='ready'?'✓ 取件':'待取件';
+  el.setAttribute('onclick',`toggleStatus('${id}','${newStatus}',this)`);
+}
+
+function renderPriceSettings(){
+  const c=document.getElementById('price-settings');
+  if(!c) return;
+  const all=[...services.kg,...services.fixed,...services.delivery];
+  c.innerHTML=all.map(s=>`
+    <div class="price-row">
+      <span>${s.name['zh']}</span>
+      <input type="number" value="${s.pricePerKg||s.price}" onchange="updatePrice('${s.id}',this.value)"/>
+      <span class="unit">${s.pricePerKg?'/kg':'fix'}</span>
+    </div>`).join('');
+}
+
+function updatePrice(id,val){
+  const price=parseInt(val)||0;
+  let s=services.kg.find(x=>x.id===id);
+  if(s){s.pricePerKg=price;return;}
+  s=[...services.fixed,...services.delivery].find(x=>x.id===id);
+  if(s) s.price=price;
+}
+
+function switchTab(tab){
+  ['order','history','settings'].forEach(t=>{
+    document.getElementById('view-'+t).style.display=t===tab?'block':'none';
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='history') loadHistory();
+  if(tab==='settings'){loadSettings();renderPriceSettings();}
+}
+
+document.getElementById('cnote').addEventListener('input',buildReceipt);
+document.getElementById('receipt-note').addEventListener('input',buildReceipt);
+document.getElementById('cname').addEventListener('input',buildReceipt);
+document.getElementById('cphone').addEventListener('input',buildReceipt);
+document.getElementById('cpickup').addEventListener('input',buildReceipt);
+
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session) showApp();
+});
+</script>
+</body>
+</html>
